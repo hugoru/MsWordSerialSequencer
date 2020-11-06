@@ -1,0 +1,392 @@
+Sub SN()
+
+ 'Copyright 2020 by Garri Begidzhanov / Version 0.9 5/11/2020
+
+
+
+        On Error GoTo ErrorHandler
+
+        DimSettings:
+
+                Dim inputDate As String
+                Dim Pref As String
+                Dim Srng As String
+                Dim FndD As string
+                Dim pathName As String
+
+        Greatings:
+
+                With ActiveDocument
+                        If Len(.Path) = 0 Then
+                                MsgBox "Для начала настройки нужно сохранить документ.", vbInformation, Title
+                                .Save
+                        End If
+                        If Right(.Name, 1) = "x" Then
+                                pathName = Left$(.FullName, (Len(.FullName) - 5))
+                        Else
+                                pathName = Left$(.FullName, (Len(.FullName) - 4))
+                        End If
+                End With
+                        pathNameresult = MsgBox("ВНИМАНИЕ !" _
+                                & vbNewLine & "Перед началом настройки проверьте путь к документу :" _
+                                & vbNewLine & pathName, _
+                                vbYesNo + vbExclamation, Title)
+                                If pathNameresult = vbNo Then
+                                        MsgBox "Настройка отменена !", vbCritical, Title
+                                        Exit Sub
+                                        'Else: MsgBox "Подтверждение получено, начинаем работу. ", vbInformation, Title
+                                End If        
+        
+        Dictionary:
+
+                Title = "NORGROUP Serial Print App"
+                Head = "Настройка Документа: " & pathName
+        
+        FindDatePlace:
+
+                If ActiveDocument.Bookmarks.Exists("DT") = False Then
+                        FndD = InputBox(Head _
+                        & vbNewLine & "" _
+                        & vbNewLine & "ОПРЕДЕЛЕНИЕ МЕСТА" _
+                        & vbNewLine & "Введите Слово или предложение после которого вставить Дату выпуска. " _
+                        & vbNewLine & "При отсутствии совпадений в документе дата поставится на место курсора.",Title, "Дата выпуска")
+                        
+                        If FndD = "" Then
+                                MsgBox "Настройка  отменена !", vbCritical, Title
+                                Exit Sub
+                        End If
+                End If
+
+        FindSNPlace:
+
+                If ActiveDocument.Bookmarks.Exists("SN") = False Then
+                        FndSerialplace = InputBox(Head _
+                        & vbNewLine & "" _
+                        & vbNewLine & "ОПРЕДЕЛЕНИЕ МЕСТА " _
+                        & vbNewLine & "Введите cлово или предложение после которого вставить Заводской номер. " _
+                        & vbNewLine & "При отсутствии совпадений в документе дата поставится на место курсора.",Title, "Заводской номер")
+                        
+                        If FndSerialplace = "" Then
+                                MsgBox "Настройка  отменена !", vbCritical, Title
+                                Exit Sub
+                        End If
+                End If
+        AddDT:
+
+                If ActiveDocument.Bookmarks.Exists("DT") = False Then
+                        inputDate = InputBox("Введите дату производства в формате  ММ/ДД/ГГГГ", Title, Format(Now, "DD.MM.YYYY"))
+                
+                        If Not IsDate(inputDate) And inputDate > "0" Then
+                                MsgBox "Введен неверный формат, попробуйте еще раз.", vbExclamation , Title
+                                GoTo AddDT
+                
+                        ElseIf inputDate = "" Then
+                                MsgBox "Настройка  отменена !", vbCritical, Title
+                                Exit Sub
+                        End If
+                
+                        inputDate=Format(inputDate, "DD.MM.YYYY")
+                
+                        With Selection.Find
+                                .Forward = True
+                                .ClearFormatting
+                                .MatchWholeWord = True
+                                .MatchCase = False
+                                .Wrap = wdFindContinue
+                                .Execute FindText:=FndD
+                        End With
+                
+                        With Selection
+                                .Collapse Direction:=wdCollapseEnd
+                                .InsertAfter "      "
+                                .Font.ColorIndex = wdBlack
+                                .Collapse Direction:=wdCollapseEnd
+                                .InsertAfter inputDate
+                                .Font.ColorIndex = wdBlack
+                                .Collapse Direction:=wdCollapseEnd
+                        End With
+                        
+                        With Selection.Find
+                                .Forward = True
+                                .ClearFormatting
+                                .MatchWholeWord = True
+                                .MatchCase = False
+                                .Wrap = wdFindContinue
+                                .Execute FindText:=inputDate
+                        End With
+
+                        ActiveDocument.Bookmarks.Add _
+                        Name:="DT", Range:=Selection.Range
+                End If
+
+        AddPR:
+
+                If ActiveDocument.Bookmarks.Exists("PR") = False Then
+                        Pref = Val(InputBox("Введите префикс серийного номера.", Title))
+                     
+                        
+                        If (Len(Pref)) > 6 Then
+                                MsgBox "ВНИМАНИЕ ОШИБКА !" _
+                                & vbNewLine & "Максимум 6 знаков, попробуйте еще раз.", vbExclamation, Title
+                                GoTo AddPR
+                        
+                        ElseIf Pref = "" Then
+                                MsgBox "Настройка  отменена !", vbCritical, Title
+                                Exit Sub
+                        End If
+
+                        Pref = Format(Pref, "000000")
+                        
+                        With Selection.Find
+                                .Forward = True
+                                .ClearFormatting
+                                .MatchWholeWord = True
+                                .MatchCase = False
+                                .Wrap = wdFindContinue
+                                .Execute FindText:=FndSerialplace
+                        End With
+                        
+                        With Selection
+                                .Collapse Direction:=wdCollapseEnd
+                                .InsertAfter "      "
+                                .Font.ColorIndex = wdBlack
+                                .Collapse Direction:=wdCollapseEnd
+                                .InsertAfter Pref
+                                .Font.ColorIndex = wdBlack
+                                .Collapse Direction:=wdCollapseEnd
+                                
+                        End With
+                        
+                        With Selection.Find
+                                .Forward = True
+                                .ClearFormatting
+                                .MatchWholeWord = True
+                                .MatchCase = False
+                                .Wrap = wdFindContinue
+                                .Execute FindText:=Pref
+                        End With
+
+                        ActiveDocument.Bookmarks.Add _
+                        Name:="PR", Range:=Selection.Range
+                End If
+
+        AddSN:
+
+                If ActiveDocument.Bookmarks.Exists("PR") = True And ActiveDocument.Bookmarks.Exists("SN") = False Then
+                        Srng = Val(InputBox("Введите стартовый серийный номер максимум.", Title))
+                        
+                        If (Len(Srng)) > 6 Then
+                                MsgBox "ВНИМАНИЕ ОШИБКА !" _
+                                & vbNewLine & "Максимум 6 знаков, попробуйте еще раз.", vbExclamation, Title
+                                GoTo AddSN
+                        
+                        ElseIf Srng = "" Then
+                                MsgBox "Настройка  отменена ! Проверьте документ.", vbCritical, Title
+                                Exit Sub
+                        End If
+                        
+                        Srng = Format(Srng, "000000")        
+                        
+                        ActiveDocument.Bookmarks("PR").Select
+                                
+                        With Selection
+                                .Collapse Direction:=wdCollapseEnd
+                                .InsertAfter Srng
+                                .Font.ColorIndex = wdBlack
+                                ActiveDocument.Bookmarks.Add _
+                                Name:="SN", Range:=Selection.Range
+                                .Collapse Direction:=wdCollapseEnd
+                        End With
+
+
+                        DTBm = Application.ActiveDocument.Bookmarks("DT").Range
+                        FullSerial = Application.ActiveDocument.Bookmarks("PR").Range _
+                        & Application.ActiveDocument.Bookmarks("SN").Range
+                        
+                                #If Mac Then
+                                        Summary = MsgBox("НАСТРОЙКА ОКОНЧЕНА !" _
+                                        & vbNewLine & "" _        
+                                        & vbNewLine & "Установлены следующие данныею" _
+                                        & vbNewLine & "_______________________________________________________________" _
+                                        & vbNewLine & "" _
+                                        & vbNewLine & "Дата производства: " & DTBm _
+                                        & vbNewLine & "_______________________________________________________________" _
+                                        & vbNewLine & "" _
+                                        & vbNewLine & "Заводской номер: " _
+                                        & vbNewLine & FullSerial _
+                                        & vbNewLine & "_______________________________________________________________" _
+                                        & vbNewLine & "" _
+                                        & vbNewLine & "Название и расположение документа: " & pathName _
+                                        & vbNewLine & "_______________________________________________________________" _
+                                        & vbNewLine & "" _
+                                        & vbNewLine & "Продолжить ?", _
+                                        vbYesNo + vbInformation, Title)
+                                        
+                                        If Summary = vbNo Then
+                                                Exit Sub
+                                        End If
+                                #Else
+                                        Summary = MsgBox("НАСТРОЙКА ОКОНЧЕНА !" _
+                                        & vbNewLine & "" _
+                                        & vbNewLine & "Проверьте следующие данные." _
+                                        & vbNewLine & "_______________________________________________________________" _
+                                        & vbNewLine & "" _
+                                        & vbNewLine & "Дата производства: " & DTBm _
+                                        & vbNewLine & "_______________________________________________________________" _
+                                        & vbNewLine & "" _
+                                        & vbNewLine & "Заводской номер: " _
+                                        & vbNewLine & FullSerial _
+                                        & vbNewLine & "_______________________________________________________________" _
+                                        & vbNewLine & "" _
+                                        & vbNewLine & "Название и расположение документа: " & pathName _
+                                        & vbNewLine & "_______________________________________________________________" _
+                                        & vbNewLine & "" _
+                                        & vbNewLine & "Название принтера : " & Application.ActivePrinter _
+                                        & vbNewLine & "_______________________________________________________________" _
+                                        & vbNewLine & "" _
+                                        & vbNewLine & "Продолжить ?", _
+                                        vbYesNo + vbInformation, Title)
+                                         
+                                        If Summary = vbNo Then
+                                                Exit Sub
+                                                
+                                        End If
+                                #End If        
+                             
+                
+                End If
+                
+       
+
+        MainLoop:
+
+
+                DimSet:
+
+                        Dim rngSNLocation As Range
+                        Dim rngPRLocation As Range
+                        Dim rngDTLocation As Range
+                        Dim intSNNum As Integer
+                        Dim strSNNum As String
+                        Dim strDTNum As String
+                        Dim docCurrent As Document
+                        Dim intNumCopies As Integer
+                        Dim intCount As Integer
+
+                Settings:
+
+                        Set docCurrent = Application.ActiveDocument
+                        Set rngSNLocation = docCurrent.Bookmarks("SN").Range
+                        Set rngPRLocation = docCurrent.Bookmarks("PR").Range
+                        Set rngDTLocation = docCurrent.Bookmarks("DT").Range
+                
+                AddStartNum:
+
+                        intSNNum = Val(rngSNLocation.Text)
+                        strDTNum = Val(rngDTLocation.Text)
+                        intNumCopies = Val(InputBox$( _
+                        vbNewLine & Head _
+                        & vbNewLine & " " _
+                        & vbNewLine & " " _
+                        & vbNewLine & "Введите количество в серии к печати.", _
+                        Title, "1"))
+                        If intNumCopies = 0 Then
+                                MsgBox "Настройка  отменена !", vbCritical, Title
+                                Exit Sub
+                        End If
+                
+                FormatSetup:
+
+                        PRM = rngPRLocation.Text
+                        FullSNMStart = PRM + Format(rngSNLocation.Text, "000000")
+                        FullSNMLast = PRM + Format(intSNNum + intNumCopies, "000000")
+                        DTF = Format(strDTNum, "DD.MM.YYYY")
+               
+                
+                ConMsg:
+                        #If Mac Then
+                                result = MsgBox("ВНИМАНИЕ !" _
+                                & vbNewLine & "" _        
+                                & vbNewLine & "Проверьте следующие данные." _
+                                & vbNewLine & "_______________________________________________________________" _
+                                & vbNewLine & "" _
+                                & vbNewLine & "Дата производства: " & DTF _
+                                & vbNewLine & "_______________________________________________________________" _
+                                & vbNewLine & "" _
+                                & vbNewLine & "Диапазон заводских номеров к печати: " _
+                                & vbNewLine & FullSNMStart & " - " & FullSNMLast _
+                                & vbNewLine & "_______________________________________________________________" _
+                                & vbNewLine & "" _
+                                & vbNewLine & "Название и расположение документа: " & pathName _
+                                & vbNewLine & "_______________________________________________________________" _
+                                & vbNewLine & "" _
+                                & vbNewLine & "Продолжить ?", _
+                                vbYesNo + vbExclamation, Title)
+                                
+                                If result = vbNo Then
+                                        MsgBox "Печать отменена !", vbCritical, Title
+                                        Exit Sub
+                                        Else: MsgBox "Подтверждение получено, вывожу на печать. " , vbInformation, Title
+                                        
+                                End If 
+                        #Else
+                                result = MsgBox("ВНИМАНИЕ !" _
+                                & vbNewLine & "" _
+                                & vbNewLine & "Проверьте следующие данные." _
+                                & vbNewLine & "_______________________________________________________________" _
+                                & vbNewLine & "" _
+                                & vbNewLine & "Дата производства: " & DTF _
+                                & vbNewLine & "_______________________________________________________________" _
+                                & vbNewLine & "" _
+                                & vbNewLine & "Диапазон заводских номеров к печати: " _
+                                & vbNewLine & FullSNMStart & " - " & FullSNMLast _
+                                & vbNewLine & "_______________________________________________________________" _
+                                & vbNewLine & "" _
+                                & vbNewLine & "Название и расположение документа: " & pathName _
+                                & vbNewLine & "_______________________________________________________________" _
+                                & vbNewLine & "" _
+                                & vbNewLine & "Название принтера : " & Application.ActivePrinter _
+                                & vbNewLine & "_______________________________________________________________" _
+                                & vbNewLine & "" _
+                                & vbNewLine & "Продолжить ?", _
+                                vbYesNo + vbExclamation, Title)
+                               
+                                If result = vbNo Then
+                                        MsgBox "Печать отменена !", vbCritical, Title
+                                        Exit Sub
+                                        Else: MsgBox "Подтверждение получено, вывожу на печать." _
+                                        & vbNewLine & "   Название принтера : " _
+                                        & Application.ActivePrinter, vbInformation, Title
+                                        
+                                End If
+                        #End If
+                        
+
+                        
+
+
+            
+                PrintLoop:
+                        Options.PrintBackground = False
+                        For intCount = 1 To intNumCopies 
+                        docCurrent.PrintOut Range:=wdPrintAllDocument
+                        intSNNum = intSNNum + 1
+                        strSNNum = Format(intSNNum, "000000")
+                        rngSNLocation.Text = strSNNum
+                        Next intCount
+
+                        docCurrent.Bookmarks.Add Name:="SN", _
+                        Range:=rngSNLocation
+                        Options.PrintBackground = True
+
+                        ActiveDocument.Save
+                        Exit Sub
+
+
+
+
+
+        ErrorHandler:
+        MsgBox "Сохранение отменено пользователем.", vbInformation, Title
+        
+End Sub
